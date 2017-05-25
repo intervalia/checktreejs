@@ -88,7 +88,7 @@
       }
     }
 
-    get detail() {
+    get checkedValues() {
       var response = [];
       this.children.forEach(
         function(child) {
@@ -100,7 +100,7 @@
           }
 
           if (child.children) {
-            response = response.concat(child.detail);
+            response = response.concat(child.checkedValues);
           }
         }
       );
@@ -189,7 +189,7 @@
   }
 
   function sendChangedEvent(checkTree) {
-    var event = new CustomEvent('changed', {detail: checkTree._root.detail});
+    var event = new CustomEvent('changed', {detail: checkTree._root.checkedValues});
     checkTree.dispatchEvent(event);
   }
 
@@ -279,6 +279,10 @@
           document.head.appendChild(styleSheet);
         }
       }
+    }
+
+    get checkedValues() {
+      return this._root.checkedValues;
     }
   }
 
