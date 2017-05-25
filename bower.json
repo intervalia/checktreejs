@@ -1,0 +1,23 @@
+{
+  "name": "checktreejs",
+  "version": "1.0.0",
+  "homepage": "https://github.com/intervalia/checktreejs",
+  "authors": [
+    "Mike Collins <intervalia@gmail.com>"
+  ],
+  "description": "A raw JavaScript V1 Web Component providing a tree of checkboxes and their labels.",
+  "main": "checktree.html",
+  "keywords": [
+    "checkbox tree",
+    "tree",
+    "v1 web component"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
