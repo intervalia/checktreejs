@@ -169,7 +169,7 @@
 
         var li = newEl('li', {'class': className});
         ul.appendChild(li);
-        var cb = newEl('input', {type:'checkbox', value:child.value});
+        var cb = newEl('input', {type:'checkbox'});
         cb.checked = child.checked;
         li.appendChild(cb);
         li.appendChild(document.createTextNode(' '+(child.label || child.value || '')));

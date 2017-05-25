@@ -2,6 +2,10 @@
 
 A raw JavaScript V1 Web Component providing a tree of checkboxes and their labels.
 
+![](docs/img4.gif "Example")
+
+You can load the CheckTree with all of the options at one time, or you can load a portion and then listen for the `load` event to know when a node is opened and needs it's data loaded. This allows for lazy loading of data based on the user requesting it.
+
 ## Install
 
 Install the component using [Bower](http://bower.io/):
@@ -137,12 +141,45 @@ CheckTree dispatched two unique events: `load` and `changed`.
 
 The `load` event is dispatched to let your code know when it needs to load additional child data and add it back into CheckTree. The `load` event is only dispatched when the user clicks on an open button for a node that had the `hasChildren` property set to `true` but no children were provided. Once children are added to that node it will no longer dispatch the `load` event.
 
+##### `Event.detail` property
+
+The `load` event includes a `detail` property that signifies the node that is opening. The details value is:
+
+```json
+{
+  "node": "r.1.2"
+}
+```
+
+You use this value as the second param when you call `addOptions` to add the new options to that node instead of the root node.
+
+```javascript
+function loadHandler(event) {
+  getData(event.detail.node).then(
+    (data) => {
+      el.addOptions(data, event.detail.node);
+    }
+  );
+}
+```
+
 #### `changed` Event
 
 The `changed` event is dispatched to let your code know that the user has changed the checked state of, at least, one checkbox. Each time the user checks or un-checks the a checkbox the `changed` event is dispatched.
 
 The `changed` event is also be dispatched every time your code calls the `addOptions` function.
 
+##### `Event.detail` property
+
+The `changed` event includes a `detail` property that is the same value that can be obtained from the `checkedValues` property.
+
+```javascript
+function changedEventHandler(e) {
+  console.log(JSON.stringify(e.detail,0,2));
+}
+```
+
+> See **`checkedValues` Read-Only Property** above.
 
 ## License
 
