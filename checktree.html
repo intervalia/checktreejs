@@ -3,6 +3,8 @@
   var supportsShadowDom = !!HTMLElement.prototype.attachShadow;
   var css = `.checktree-group{padding-left:20px;}
   .checktree-node{list-style:none;position:relative;}
+  .checktree-cb-partial {position: relative;}
+  .checktree-cb-partial:after{background-color: #99999E;bottom: 4px;content: '';left:3px;position:absolute;right:3px;top:2px;}
   .checktree-toggle{background:transparent;border:none;display:none;left:-15px;margin:0;padding:3px 0;position:absolute;}
   .checktree-parent > .checktree-toggle{display:inline-block;}
   .checktree-node > ul{display: none;}
@@ -52,14 +54,29 @@
     }
 
     setCheckFromChildren() {
-      this._checked = !this.children.some(
+      var someSelected = false;
+      this._checked = true;
+
+      this.children.forEach(
         function(child) {
-          return !child.checked;
-        }
+          if (child.checked !== false) {
+            someSelected = true; // If ANY are checked then `someSelected` is true
+          }
+
+          if(child.checked !== true){
+            this._checked = false; // If ANY are not checked then the parent is not checked.
+          }
+        }, this
       );
 
+      if (this._checked === false && someSelected) {
+        this._checked = undefined;
+      }
+
       if (this.el) {
-        this.el.firstChild.checked = this._checked;
+        var cb = this.el.firstChild;
+        cb.checked = this._checked;
+        cb.classList.toggle('checktree-cb-partial', this._checked === undefined);
       }
 
       if (this.parent) {
@@ -71,10 +88,15 @@
       return this._checked;
     }
 
+    // `true` === checked,
+    // `false` === Unchecked
+    // `undefined` === Some children checked
     set checked(checked) {
       this._checked = checked;
       if (this.el) {
-        this.el.firstChild.checked = checked;
+        var cb = this.el.firstChild;
+        cb.checked = checked;
+        cb.classList.toggle('checktree-cb-partial', checked === undefined);
       }
 
       this.children.forEach(
@@ -129,7 +151,9 @@
     var el = document.createElement(type);
     if (attrs) {
       Object.keys(attrs).forEach(
-        key => el.setAttribute(key, attrs[key])
+        function(key) {
+          el.setAttribute(key, attrs[key]);
+        }
       );
     }
     return el;
@@ -216,7 +240,7 @@
       this._root.el = supportsShadowDom ? this.attachShadow({mode: 'closed'}) : this;
 
       this._root.el.addEventListener('click',
-        e => {
+        function(e) {
           var treeOption;
           if (e.target.classList.contains('checktree-toggle')) {
             // Only handle the open/close buttons
@@ -236,8 +260,8 @@
       );
 
       this._root.el.addEventListener('change',
-        e => {
-          let target = e.target;
+        function(e) {
+          var target = e.target;
           var treeOptions = target.ctOption
           treeOptions.checked = target.checked;
 
