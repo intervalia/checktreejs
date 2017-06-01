@@ -240,7 +240,7 @@
       this._root.el = supportsShadowDom ? this.attachShadow({mode: 'closed'}) : this;
 
       this._root.el.addEventListener('click',
-        function(e) {
+        (e) => {
           var treeOption;
           if (e.target.classList.contains('checktree-toggle')) {
             // Only handle the open/close buttons
@@ -260,7 +260,7 @@
       );
 
       this._root.el.addEventListener('change',
-        function(e) {
+        (e) => {
           var target = e.target;
           var treeOptions = target.ctOption
           treeOptions.checked = target.checked;
