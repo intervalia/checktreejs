@@ -26,11 +26,11 @@
       this._opened = false;
       this.children = [];
       this.hasChildren = false;
-      this.label = label;
+      this._label = label;
       this.value = value;
     }
 
-    _addChild(child) {
+    _addChild(child, autoOpen) {
       var newChild = new TreeOption(child.label, child.value);
       var idx = this.children.length;
       newChild.parent = this;
@@ -42,15 +42,36 @@
 
       if (Array.isArray(child.children) && child.children.length > 0) {
         newChild.hasChildren = true;
-        newChild.addChildren(child.children);
+        newChild.addChildren(child.children, autoOpen);
+        newChild.opened = autoOpen;
       }
       else {
         newChild.hasChildren = !!child.hasChildren;
       }
     }
 
-    addChildren(children) {
-      children.forEach(this._addChild, this);
+    addChildren(children, autoOpen) {
+      children.forEach(
+        (child) => {
+          this._addChild(child, autoOpen);
+        }, this);
+    }
+
+    removeChildren() {
+      this.children.forEach(
+        (child) => {
+          child.removeChildren();
+          if (child.el) {
+            child.el.remove();
+          }
+        }
+      );
+
+      this.opened = false;
+      this.children = [];
+      if (this.checked === undefined) {
+        this.checked = false;
+      }
     }
 
     setCheckFromChildren() {
@@ -130,13 +151,24 @@
       return response;
     }
 
+    get label() {
+      return this._label
+    }
+
+    set label(value) {
+      this._label = value;
+      if (this.el) {
+        this.el.firstChild.nextSibling.textContent = ' '+value;
+      }
+    }
+
     get opened() {
       return this._opened;
     }
 
     set opened(opened) {
       this._opened = opened;
-      if (this.el) {
+      if (this.el && this.el.nodeType !== 11) {
         this.el.classList.toggle('checktree-opened', opened);
       }
     }
@@ -189,6 +221,9 @@
         var className = "checktree-node";
         if (child.hasChildren) {
           className += ' checktree-parent';
+        }
+        if (child.opened) {
+          className += ' checktree-opened'
         }
 
         var li = newEl('li', {'class': className});
@@ -270,13 +305,21 @@
       );
     }
 
-    addOptions(options, parentId = null) {
+    addOptions(options, parentId = null, autoOpen) {
       var treeOption = this._root;
       if (!Array.isArray(options)) {
         throw new TypeError("`options` must be an array of options");
       }
 
       if (options.length > 0) {
+        if (parentId === true && autoOpen === undefined) {
+          autoOpen = true;
+          parentId = null;
+        }
+        else {
+          autoOpen = autoOpen === true || false;
+        }
+
         if(isString(parentId) && parentId.length > 1) {
           treeOption = getTreeOptionFromId(this._root, parentId)
 
@@ -288,15 +331,45 @@
           throw new TypeError("`parentId` must be null or a string");
         }
 
-        treeOption.addChildren(options);
+        treeOption.addChildren(options, autoOpen);
         render(treeOption);
         sendChangedEvent(this);
       }
     }
 
+    changeLabel(label, nodeId) {
+      if (!isString(nodeId)) {
+        throw new TypeError('`nodeId` must be a string.');
+      }
+
+      if (!isString(label)) {
+        throw new TypeError('`label` must be a string.');
+      }
+
+      var option = getTreeOptionFromId(this._root, nodeId);
+      if (!option) {
+        throw new ReferenceError('`nodeId` was not found;');
+      }
+
+      option.label = label;
+    }
+
+    removeOptions(parentId) {
+      if (parentId !== undefined && !isString(parentId)) {
+        throw new TypeError('`parentId` must be a string or `undefined`.');
+      }
+
+      var option = parentId === undefined ? this._root : getTreeOptionFromId(this._root, parentId);
+      if (!option) {
+        throw new ReferenceError('`parentId` was not found;');
+      }
+
+      option.removeChildren();
+    }
+
     connectedCallback() {
       if (supportsShadowDom) {
-        this._root.el.appendChild(styleSheet);
+        this._root.el.appendChild(styleSheet.cloneNode(true));
       }
       else {
         if (!document.querySelector('style[data-type=checktree]')) {

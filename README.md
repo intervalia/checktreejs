@@ -112,9 +112,13 @@ The length of the `key` value is based on the position of the checkbox that is c
     
 ### `addOptions` Function
 
-The `addOptions` function is used to add options into the CheckTree. The data passed in is an array of Option objects that contain, at a minimum a `label` and a `value`.
+The `addOptions` function is used to add options into the CheckTree.
 
-The Option objects has the following properties:
+There are three parameters passed into `addOptions(options[, parentId][, autoOpen])`.
+
+The `options` parameter is an array of Option objects that contain, at a minimum a `label` and a `value`.
+
+The `options` objects has the following properties:
 
 | Property | Description |
 | --- | --- |
@@ -125,13 +129,55 @@ The Option objects has the following properties:
 
 > The `initialData`, `children` and `cats` objects in the JavaScript code above are exampled of the option data passed into the `addOptions` function.
 
-The second parameter passed into `addOptions` can be a node key or nothing. If it is nothing then you are adding options to the root node. If it is a valid node key then you are adding options to that specific node.
+The `parentId` can be excluded or passed in as `null` to specify that you are adding these `options` to the root node of the tree.
 
-The code `el.addOptions(initialData);` in the example above adds the options to the root node.
+If `parentId` is a valid node key then you are adding the `options` to that specific node. If the node does not exist a `ReferenceError` is thrown.
 
-The code `el.addOptions(data, event.detail.node)` in the example above adds the options to a specific node.
+`autoOpen` can be set to `true` and all of the new nodes that are added will be open be default. Any other value will leave the new nodes closed.
 
-> There is no way to add options through DOM attributes. You must call `addOptions`.
+You can pass `true` as the second parameter if you are adding new `options` to the root of the tree and you want them to `autoOpen`.
+
+Examples: 
+
+The code `el.addOptions(initialData);`, in the example above, adds the options to the root node.
+
+The code `el.addOptions(data, event.detail.node);`, in the example above, adds the options to a specific node.
+
+If you wanted to auto open the two example above they would be written like this:
+
+```JavaScript
+// Add the root options and auto open them
+el.addOptions(initialData, true);
+
+// Add the sub options and auto open them.
+el.addOptions(data, event.detail.node, true);
+```
+
+> There is no way to add options through a DOM attribute. You must call the `addOptions` method.
+ 
+### `changeLabel` Function
+
+The `changeLabel` function allows you to change the text of a specific label. The function is called like this: `changeLabel(label, nodeId)`
+
+The `label` parameter is the new text for the label. It must be a `string`.
+
+The `nodeId` parameter is the id to specify which label you are changing. As defined in `checkedValues` above the `nodeId` is specified by using the indexed values of each branch in the tree to indicate which node to affect. A value of `r.0` will affect the first checkbox in the tree. A value of `r.1.0` will affect the first node that is a child of the second node of the tree.
+
+### `removeOptions` Function
+
+The `removeOptions` function allows you to clear the child options of any parent node. The function takes one, optional, parameter called `parentId` to specify the parent node. If `parentId` is undefined, then you are removing all children from the root node of the tree. This removes *all* children and empties the entire tree.
+
+If `parentId` refers to a valid parent node that contains children then those children are removed.
+
+Examples:
+
+```JavaScript
+// Remove all options from the tree
+el.removeOptions();
+
+// Remove only this options of the first node in the tree
+el.removeOptions('r.0');
+```
 
 ### Events
 

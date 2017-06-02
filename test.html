@@ -6,14 +6,22 @@
     <link rel="import" href="checktree.html">
   </head>
   <body>
-    <check-tree id="testme"></check-tree>
+    <h2>First CheckTree</h2>
+    <check-tree id="ct1"></check-tree>
+    <hr/>
+    <h2>Second CheckTree</h2>
+    <check-tree id="ct2"></check-tree>
     <script>
     var initialData = [
       { label: 'One', value: {One:'One',a:1,b:2} },
       { label: 'Two', value: 2, children: [
         { label: 'A', value: 'Two.A-SomeValue' },
         { label: 'B', value: 'Two.B-AnotherValue', hasChildren: true },
-        { label: 'PI', value: 3.1415 }
+        { label: 'PI', value: 3.1415, children: [
+          { label: 'Cool', value: 'Two.PI.Cool' },
+          { label: 'Wow', value: 'Two.PI.Wow' },
+          { label: 'Zing', value: 'Two.PI.Zing' }
+        ]}
       ]},
       { label: 'Three', value: 3 }
     ];
@@ -37,13 +45,17 @@
     function loadHandler(event) {
       console.log('Need to load for:', event.detail.node);
       var data = event.detail.node=== 'r.1.1' ? children : cats;
-      setTimeout(() => {el.addOptions(data, event.detail.node)}, 1000);
+      setTimeout(() => {ct1.addOptions(data, event.detail.node)}, 1000);
 
     }
-    var el = document.getElementById('testme');
-    el.addEventListener('changed', eh);
-    el.addEventListener('load', loadHandler);
-    el.addOptions(initialData);
+    var ct1 = document.getElementById('ct1');
+    var ct2 = document.getElementById('ct2');
+
+    ct1.addEventListener('changed', eh);
+    ct1.addEventListener('load', loadHandler);
+    ct1.addOptions(initialData, true);
+
+    ct2.addOptions(initialData);
     </script>
   </body>
 </html>
