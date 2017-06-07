@@ -367,6 +367,11 @@
       option.removeChildren();
     }
 
+    setChecked(nodeId, checked) {
+      var treeOption = getTreeOptionFromId(this._root, nodeId);
+      treeOption.checked = checked;
+    }
+
     connectedCallback() {
       if (supportsShadowDom) {
         this._root.el.appendChild(styleSheet.cloneNode(true));
