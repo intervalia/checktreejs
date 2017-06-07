@@ -1,0 +1,418 @@
+<script>
+(function() {
+  var supportsShadowDom = !!HTMLElement.prototype.attachShadow;
+  var css = '.checktree-group{padding-left:20px;} '+
+  '.checktree-node{list-style:none;position:relative;} '+
+  '.checktree-cb-partial {position: relative;} '+
+  '.checktree-cb-partial:after{background-color: #99999E;bottom: 4px;content: "";left:3px;position:absolute;right:3px;top:2px;} '+
+  '.checktree-toggle{background:transparent;border:none;display:none;left:-15px;margin:0;padding:3px 0;position:absolute;} '+
+  '.checktree-parent > .checktree-toggle{display:inline-block;} '+
+  '.checktree-node > ul{display: none;} '+
+  '.checktree-opened > .checktree-toggle{transform:rotate(90deg);} '+
+  '.checktree-opened > ul{display:block;}';
+
+
+  //*****************************************************************
+  //
+  // Class: TreeOption
+  //
+  // The data that is used to render the UI. It also is used to
+  // maintain state and update the UI as things change.
+  //
+  class TreeOption {
+    constructor(label = '', value = '') {
+      this.id = 'r';
+      this._checked = false;
+      this._opened = false;
+      this.children = [];
+      this.hasChildren = false;
+      this._label = label;
+      this.value = value;
+    }
+
+    _addChild(child, autoOpen) {
+      var newChild = new TreeOption(child.label, child.value);
+      var idx = this.children.length;
+      newChild.parent = this;
+      if (this.checked) {
+        newChild.checked = this.checked;
+      }
+      newChild.id = this.id + '.' + idx;
+      this.children.push(newChild);
+
+      if (Array.isArray(child.children) && child.children.length > 0) {
+        newChild.hasChildren = true;
+        newChild.addChildren(child.children, autoOpen);
+        newChild.opened = autoOpen;
+      }
+      else {
+        newChild.hasChildren = !!child.hasChildren;
+      }
+    }
+
+    addChildren(children, autoOpen) {
+      children.forEach(
+        (child) => {
+          this._addChild(child, autoOpen);
+        }, this);
+    }
+
+    removeChildren() {
+      this.children.forEach(
+        (child) => {
+          child.removeChildren();
+          if (child.el) {
+            child.el.remove();
+          }
+        }
+      );
+
+      this.opened = false;
+      this.children = [];
+      if (this.checked === undefined) {
+        this.checked = false;
+      }
+    }
+
+    setCheckFromChildren() {
+      var someSelected = false;
+      this._checked = true;
+
+      this.children.forEach(
+        function(child) {
+          if (child.checked !== false) {
+            someSelected = true; // If ANY are checked then `someSelected` is true
+          }
+
+          if(child.checked !== true){
+            this._checked = false; // If ANY are not checked then the parent is not checked.
+          }
+        }, this
+      );
+
+      if (this._checked === false && someSelected) {
+        this._checked = undefined;
+      }
+
+      if (this.el) {
+        var cb = this.el.firstChild;
+        cb.checked = this._checked;
+        cb.classList.toggle('checktree-cb-partial', this._checked === undefined);
+      }
+
+      if (this.parent) {
+        this.parent.setCheckFromChildren();
+      }
+    }
+
+    get checked() {
+      return this._checked;
+    }
+
+    // `true` === checked,
+    // `false` === Unchecked
+    // `undefined` === Some children checked
+    set checked(checked) {
+      this._checked = checked;
+      if (this.el) {
+        var cb = this.el.firstChild;
+        cb.checked = checked;
+        cb.classList.toggle('checktree-cb-partial', checked === undefined);
+      }
+
+      this.children.forEach(
+        function(child) {
+          child.checked = checked;
+        }
+      );
+
+      if (this.parent) {
+        this.parent.setCheckFromChildren();
+      }
+    }
+
+    get checkedValues() {
+      var response = [];
+      this.children.forEach(
+        function(child) {
+          if (child.checked) {
+            response.push({
+              key: child.id,
+              value: child.value
+            });
+          }
+
+          if (child.children) {
+            response = response.concat(child.checkedValues);
+          }
+        }
+      );
+
+      return response;
+    }
+
+    get label() {
+      return this._label
+    }
+
+    set label(value) {
+      this._label = value;
+      if (this.el) {
+        this.el.firstChild.nextSibling.textContent = ' '+value;
+      }
+    }
+
+    get opened() {
+      return this._opened;
+    }
+
+    set opened(opened) {
+      this._opened = opened;
+      if (this.el && this.el.nodeType !== 11) {
+        this.el.classList.toggle('checktree-opened', opened);
+      }
+    }
+  }
+
+
+  //*****************************************************************
+  //
+  // Private helper Functions
+  //
+  function newEl(type, attrs) {
+    var el = document.createElement(type);
+    if (attrs) {
+      Object.keys(attrs).forEach(
+        function(key) {
+          el.setAttribute(key, attrs[key]);
+        }
+      );
+    }
+    return el;
+  }
+
+  function getTreeOptionFromId(root, id) {
+    var obj = root;
+
+    id.substr(2).split('.').some(
+      function(key) {
+        obj = obj.children[isNaN(key)?-1:parseInt(key,10)];
+        return obj === undefined;
+      }, this
+    );
+
+    return obj;
+  }
+
+  function isString(value) {
+    return Object.prototype.toString.call(value).slice(8, -1) === 'String';
+  }
+
+  function render(parent) {
+    var ul = parent.el.querySelector('ul');
+    if (ul) {
+      ul.remove();
+    }
+    ul = newEl('ul', {'class': 'checktree-group'});
+    parent.el.appendChild(ul);
+
+    parent.children.forEach(
+      function(child, idx) {
+        var className = "checktree-node";
+        if (child.hasChildren) {
+          className += ' checktree-parent';
+        }
+        if (child.opened) {
+          className += ' checktree-opened'
+        }
+
+        var li = newEl('li', {'class': className});
+        ul.appendChild(li);
+        var cb = newEl('input', {type:'checkbox'});
+        cb.checked = child.checked;
+        li.appendChild(cb);
+        li.appendChild(document.createTextNode(' '+(child.label || child.value || '')));
+        if (child.hasChildren) {
+          var btn = newEl('button', {'class': 'checktree-toggle'});
+          btn.textContent = '►';
+          li.appendChild(btn)
+        }
+
+        child.el = li;
+        cb.ctOption = child;
+        if (child.children.length > 0) {
+          render(child)
+        }
+      }
+    );
+  }
+
+  function sendChangedEvent(checkTree) {
+    var event = new CustomEvent('changed', {detail: checkTree._root.checkedValues});
+    checkTree.dispatchEvent(event);
+  }
+
+
+  //*****************************************************************
+  //
+  // Private variables
+  //
+  var styleSheet = newEl('style', {'data-type': 'checktree'});
+  styleSheet.textContent = css;
+
+
+  //*****************************************************************
+  //
+  // Class: CheckTree
+  //
+  // Web Component: <check-tree></check-tree>
+  //
+  class CheckTree extends HTMLElement {
+    // Constructor
+    constructor() {
+      super();
+
+      this._root = new TreeOption();
+      this._root.el = supportsShadowDom ? this.attachShadow({mode: 'closed'}) : this;
+
+      this._root.el.addEventListener('click',
+        (e) => {
+          var treeOption;
+          if (e.target.classList.contains('checktree-toggle')) {
+            // Only handle the open/close buttons
+            e.preventDefault();
+            treeOption = e.target.parentNode.firstChild.ctOption;
+            treeOption.opened = !treeOption.opened;
+
+            if (treeOption.opened && treeOption.children.length === 0) {
+              var detail = {
+                node: treeOption.id
+              }
+              var event = new CustomEvent('load', {detail: detail});
+              this.dispatchEvent(event);
+            }
+          }
+        }
+      );
+
+      this._root.el.addEventListener('change',
+        (e) => {
+          var target = e.target;
+          var treeOptions = target.ctOption
+          treeOptions.checked = target.checked;
+
+          sendChangedEvent(this);
+        }
+      );
+    }
+
+    connectedCallback() {
+      if (supportsShadowDom) {
+        this._root.el.appendChild(styleSheet.cloneNode(true));
+      }
+      else {
+        if (!document.querySelector('style[data-type=checktree]')) {
+          document.head.appendChild(styleSheet);
+        }
+      }
+    }
+
+    // Properties
+    get checkedValues() {
+      return this._root.checkedValues;
+    }
+
+
+    // Methods
+    addOptions(options, parentId = null, autoOpen) {
+      var treeOption = this._root;
+      if (!Array.isArray(options)) {
+        throw new TypeError("`options` must be an array of options");
+      }
+
+      if (options.length > 0) {
+        if (parentId === true && autoOpen === undefined) {
+          autoOpen = true;
+          parentId = null;
+        }
+        else {
+          autoOpen = autoOpen === true || false;
+        }
+
+        if(isString(parentId) && parentId.length > 1) {
+          treeOption = getTreeOptionFromId(this._root, parentId)
+
+          if (!treeOption) {
+            throw new ReferenceError("There is no entry for the `parentId` of "+parentId);
+          }
+        }
+        else if (parentId !== null && parentId !== 'r') {
+          throw new TypeError("`parentId` must be null or a string");
+        }
+
+        treeOption.addChildren(options, autoOpen);
+        render(treeOption);
+        sendChangedEvent(this);
+      }
+    }
+
+    changeLabel(label, nodeId) {
+      if (!isString(nodeId)) {
+        throw new TypeError('`nodeId` must be a string.');
+      }
+
+      if (!isString(label)) {
+        throw new TypeError('`label` must be a string.');
+      }
+
+      var option = getTreeOptionFromId(this._root, nodeId);
+      if (!option) {
+        throw new ReferenceError('`nodeId` was not found;');
+      }
+
+      option.label = label;
+    }
+
+    isChecked(nodeId) {
+      if (!isString(nodeId)) {
+        throw new TypeError('`nodeId` must be a string.');
+      }
+
+      var option = getTreeOptionFromId(this._root, nodeId);
+      if (!option) {
+        throw new ReferenceError('`nodeId` was not found;');
+      }
+
+      return option.checked;
+    }
+
+    removeOptions(parentId) {
+      if (parentId !== undefined && !isString(parentId)) {
+        throw new TypeError('`parentId` must be a string or `undefined`.');
+      }
+
+      var option = parentId === undefined ? this._root : getTreeOptionFromId(this._root, parentId);
+      if (!option) {
+        throw new ReferenceError('`parentId` was not found;');
+      }
+
+      option.removeChildren();
+    }
+
+    setChecked(nodeId, checked) {
+      if (!isString(nodeId)) {
+        throw new TypeError('`nodeId` must be a string.');
+      }
+
+      var option = getTreeOptionFromId(this._root, nodeId);
+      if (!option) {
+        throw new ReferenceError('`nodeId` was not found;');
+      }
+
+      option.checked = !!checked;
+    }
+  }
+
+  window.customElements.define('check-tree', CheckTree);
+})();
+</script>
