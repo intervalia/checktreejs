@@ -7,17 +7,26 @@
     <!-- <link rel="import" href="checktree-raw.html"> -->
   </head>
   <body>
+
+
     <h2>First CheckTree</h2>
     <check-tree id="ct1"></check-tree>
+
+
     <hr/>
+
+
     <h2>Second CheckTree</h2>
     <check-tree id="ct2"></check-tree>
+
+
     <script>
     var initialData = [
       { label: 'One', value: {One:'One',a:1,b:2} },
       { label: 'Two', value: 2, children: [
         { label: 'A', value: 'Two.A-SomeValue' },
         { label: 'B', value: 'Two.B-AnotherValue', hasChildren: true },
+        { label: 'C', value: 'Two.C', hasChildren: true },
         { label: 'PI', value: 3.1415, children: [
           { label: 'Cool', value: 'Two.PI.Cool' },
           { label: 'Wow', value: 'Two.PI.Wow' },
@@ -27,7 +36,7 @@
       { label: 'Three', value: 3 }
     ];
 
-    var children = [
+    var animals = [
       { label: 'Dog', value: 'Dog-Woof' },
       { label: 'Cat', value: 'Cat-Meow', hasChildren: true },
       { label: 'Pig', value: 'Pig-Grunt' }
@@ -39,6 +48,27 @@
       { label: 'Lion',  value: 'lion' }
     ];
 
+    var deepData = [
+      { label: 'Taco', value: 'taco' },
+      { label: 'Burrito',  value: 'burrito' },
+      { label: 'Sandwhich',  value: 'sandwhich', children: [
+        { label: 'BLT', value: 'blt' },
+        { label: 'PB & J',  value: 'PB&J' },
+        { label: 'Sub',  value: 'sub', children: [
+          { label: 'Hot',  value: 'hot', children: [
+            { label: 'Meetball', value: 'meetball' },
+            { label: 'Baked Chicken', value: 'baked_chicken' },
+            { label: 'Pizza', value: 'pizza' }
+          ] },
+          { label: 'Cold',  value: 'cold', children: [
+            { label: 'Turkey', value: 'turkey' },
+            { label: 'Ham and Cheese', value: 'ham_and_cheese' },
+            { label: 'Classic', value: 'classic' }
+          ] }
+        ] }
+      ] }
+    ]
+
     var test2 = [
       {
         label: "United States", value: 1, children: [
@@ -49,7 +79,7 @@
             { label: "Four", value: 4 }
             ]
           },
-          { label: "Hawai Territory", value: 2 }
+          { label: "Hawaii Territory", value: 2 }
         ]
       }
     ];
@@ -59,9 +89,27 @@
     }
 
     function loadHandler(event) {
-      console.log('Need to load for:', event.detail.node);
-      var data = event.detail.node=== 'r.1.1' ? children : cats;
-      setTimeout(() => {ct1.addOptions(data, event.detail.node)}, 1000);
+      var node = event.detail.node;
+      console.log('Need to load for:', node);
+      var data;
+      var openLevel = false;
+      if (node === 'r.1.1') {
+        data = animals;
+      }
+      else if (node === 'r.1.2') {
+        data = deepData;
+        openLevel = 2;
+      }
+      else {
+        data = cats;
+        openLevel = true;
+      }
+      setTimeout(
+        () => {
+          console.log();
+          ct1.addOptions(data, node, openLevel)
+        }, 1000
+      );
 
     }
     var ct1 = document.getElementById('ct1');

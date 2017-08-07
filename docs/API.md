@@ -77,8 +77,11 @@ el.addOptions(initialData, true);
 // Add the sub options and auto open them.
 el.addOptions(data, event.detail.node, true);
 ```
-
 > There is no way to add options through a DOM attribute. You must call the `addOptions` method.
+
+**`autoOpen` improvements with version 1.2.0**
+
+As of version 1.2.0 you can now pass a boolean value, as described above, or an unsigned integer (UINT) value for `autoOpen`. If you use a UINT value then the new child branches will only open automatically to the level specified by the `autoOpen` value. A value of `0` will auto open no children. A value of `2` will open all children for the first two layers.
 
 ### `changeLabel` Function
 

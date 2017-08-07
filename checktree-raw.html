@@ -41,8 +41,12 @@
       this.children.push(newChild);
 
       if (Array.isArray(child.children) && child.children.length > 0) {
+        var newAutoOpen = typeof autoOpen === 'number' ? autoOpen-1 : autoOpen;
+        if (newAutoOpen < 0) {
+          newAutoOpen = 0;
+        }
         newChild.hasChildren = true;
-        newChild.addChildren(child.children, autoOpen);
+        newChild.addChildren(child.children, newAutoOpen);
         newChild.opened = autoOpen;
       }
       else {
@@ -335,7 +339,7 @@
           autoOpen = true;
           parentId = null;
         }
-        else {
+        else if (typeof autoOpen !== 'number') {
           autoOpen = autoOpen === true || false;
         }
 
